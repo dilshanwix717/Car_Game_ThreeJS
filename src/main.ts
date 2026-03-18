@@ -11,10 +11,9 @@ import { UI } from "./ui/UI.ts";
 import { Game } from "./Game.ts";
 
 /**
- * Startup sequence — everything initialized synchronously
- * before the first frame is rendered.
+ * Startup sequence — loads model asynchronously then starts game.
  */
-function main(): void {
+async function main(): Promise<void> {
   // 1. Create renderer + camera
   const { renderer, camera } = createRenderer();
 
@@ -24,8 +23,8 @@ function main(): void {
   // 3. Build level with simple Three.js box walls
   const { walls, parkingZone } = buildLevel(scene, LEVEL_1);
 
-  // 4. Create car
-  const carGroup = createCarMesh();
+  // 4. Create car (loads model async)
+  const carGroup = await createCarMesh();
   carGroup.position.set(LEVEL_1.start.position.x, 0, LEVEL_1.start.position.z);
   carGroup.rotation.y = LEVEL_1.start.rotation;
   scene.add(carGroup);
