@@ -4,14 +4,15 @@ import { createCarMesh } from "./systems/CarMesh.ts";
 import { CarController } from "./systems/CarController.ts";
 import { CameraController } from "./systems/CameraController.ts";
 import { InputHandler } from "./systems/InputHandler.ts";
-import { buildLevel, LEVEL_1 } from "./systems/LevelBuilder.ts";
+import { buildLevel } from "./systems/LevelBuilder.ts";
+import { loadLevel } from "./systems/LevelLoader.ts";
 import { CollisionSystem } from "./systems/CollisionSystem.ts";
 import { ParkingDetector } from "./systems/ParkingDetector.ts";
 import { UI } from "./ui/UI.ts";
 import { Game } from "./Game.ts";
 
 /**
- * Startup sequence — loads model asynchronously then starts game.
+ * Startup sequence — loads level + model asynchronously then starts game.
  */
 async function main(): Promise<void> {
   // 1. Create renderer + camera
@@ -20,37 +21,44 @@ async function main(): Promise<void> {
   // 2. Create scene + lights
   const scene = createScene();
 
-  // 3. Build level with simple Three.js box walls
-  const { walls, parkingZone } = buildLevel(scene, LEVEL_1);
+  // 3. Load level from JSON
+  const levelData = await loadLevel("level1");
 
-  // 4. Create car (loads model async)
+  // 4. Build level with simple Three.js box walls
+  const { walls, parkingZone } = buildLevel(scene, levelData);
+
+  // 5. Create car (loads model async)
   const carGroup = await createCarMesh();
-  carGroup.position.set(LEVEL_1.start.position.x, 0, LEVEL_1.start.position.z);
-  carGroup.rotation.y = LEVEL_1.start.rotation;
+  carGroup.position.set(
+    levelData.start.position.x,
+    0,
+    levelData.start.position.z,
+  );
+  carGroup.rotation.y = levelData.start.rotation;
   scene.add(carGroup);
 
-  // 5. Create car controller
+  // 6. Create car controller
   const carController = new CarController(carGroup);
-  carController.heading = LEVEL_1.start.rotation;
+  carController.heading = levelData.start.rotation;
 
-  // 6. Create camera controller
+  // 7. Create camera controller
   const cameraController = new CameraController(camera, carGroup);
 
-  // 7. Create input handler
+  // 8. Create input handler
   const inputHandler = new InputHandler();
 
-  // 8. Create collision system
+  // 9. Create collision system
   const collisionSystem = new CollisionSystem(walls);
 
-  // 9. Create UI
+  // 10. Create UI
   const ui = new UI();
 
-  // 10. Create parking detector
+  // 11. Create parking detector
   const parkingDetector = new ParkingDetector(parkingZone, () => {
     ui.showComplete(() => game.reset());
   });
 
-  // 11. Assemble and start game
+  // 12. Assemble and start game
   const game = new Game({
     renderer,
     scene,
@@ -62,7 +70,7 @@ async function main(): Promise<void> {
     parkingDetector,
     inputHandler,
     ui,
-    startDef: LEVEL_1.start,
+    startDef: levelData.start,
   });
 
   game.start();
